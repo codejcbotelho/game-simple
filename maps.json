@@ -1,0 +1,202 @@
+{
+    "maps": [
+        {
+            "id": 0,
+            "name": "Início",
+            "description": "Mapa inicial com escada para o andar superior",
+            "platforms": [
+                {
+                    "x": 0,
+                    "y": 560,
+                    "width": 800,
+                    "height": 40,
+                    "color": "#4a4a4a",
+                    "type": "ground"
+                },
+                {
+                    "x": 200,
+                    "y": 400,
+                    "width": 100,
+                    "height": 20,
+                    "color": "#666",
+                    "type": "platform"
+                },
+                {
+                    "x": 600,
+                    "y": 200,
+                    "width": 40,
+                    "height": 400,
+                    "color": "#666",
+                    "type": "ladder"
+                }
+            ],
+            "enemies": [
+                {
+                    "initialX": 300,
+                    "initialY": 520,
+                    "width": 30,
+                    "height": 30,
+                    "color": "#ff6b6b",
+                    "speed": 2,
+                    "type": "patrol",
+                    "patrolDistance": 100
+                }
+            ],
+            "items": [
+                {
+                    "x": 220,
+                    "y": 370,
+                    "type": "coin",
+                    "value": 10
+                }
+            ],
+            "connections": {
+                "top": 1,
+                "right": 3
+            },
+            "backgroundColor": "#000"
+        },
+        {
+            "id": 1,
+            "name": "Andar Superior",
+            "description": "Mapa superior com buraco no meio",
+            "platforms": [
+                {
+                    "x": 0,
+                    "y": 560,
+                    "width": 300,
+                    "height": 40,
+                    "color": "#4a4a4a",
+                    "type": "ground"
+                },
+                {
+                    "x": 500,
+                    "y": 560,
+                    "width": 300,
+                    "height": 40,
+                    "color": "#4a4a4a",
+                    "type": "ground"
+                },
+                {
+                    "x": 350,
+                    "y": 300,
+                    "width": 100,
+                    "height": 20,
+                    "color": "#666",
+                    "type": "platform"
+                }
+            ],
+            "enemies": [
+                {
+                    "initialX": 600,
+                    "initialY": 520,
+                    "width": 30,
+                    "height": 30,
+                    "color": "#ff6b6b",
+                    "speed": 2.5,
+                    "type": "patrol",
+                    "patrolDistance": 150
+                }
+            ],
+            "items": [],
+            "connections": {
+                "bottom": 0,
+                "right": 2
+            },
+            "backgroundColor": "#000"
+        },
+        {
+            "id": 2,
+            "name": "Torre Superior",
+            "description": "Mapa superior direito com plataformas em níveis",
+            "platforms": [
+                {
+                    "x": 0,
+                    "y": 560,
+                    "width": 800,
+                    "height": 40,
+                    "color": "#4a4a4a",
+                    "type": "ground"
+                },
+                {
+                    "x": 100,
+                    "y": 450,
+                    "width": 100,
+                    "height": 20,
+                    "color": "#666",
+                    "type": "platform"
+                },
+                {
+                    "x": 300,
+                    "y": 350,
+                    "width": 100,
+                    "height": 20,
+                    "color": "#666",
+                    "type": "platform"
+                }
+            ],
+            "enemies": [],
+            "items": [
+                {
+                    "x": 320,
+                    "y": 320,
+                    "type": "powerup",
+                    "effect": "jump_boost"
+                }
+            ],
+            "connections": {
+                "left": 1
+            },
+            "backgroundColor": "#000"
+        },
+        {
+            "id": 3,
+            "name": "Torre Direita",
+            "description": "Mapa lateral com escada para subir",
+            "platforms": [
+                {
+                    "x": 0,
+                    "y": 560,
+                    "width": 800,
+                    "height": 40,
+                    "color": "#4a4a4a",
+                    "type": "ground"
+                },
+                {
+                    "x": 0,
+                    "y": 200,
+                    "width": 40,
+                    "height": 400,
+                    "color": "#666",
+                    "type": "ladder"
+                },
+                {
+                    "x": 200,
+                    "y": 300,
+                    "width": 400,
+                    "height": 20,
+                    "color": "#666",
+                    "type": "platform"
+                }
+            ],
+            "enemies": [
+                {
+                    "initialX": 400,
+                    "initialY": 260,
+                    "width": 30,
+                    "height": 30,
+                    "color": "#ff6b6b",
+                    "speed": 3,
+                    "type": "patrol",
+                    "patrolDistance": 200
+                }
+            ],
+            "items": [],
+            "connections": {
+                "left": 0,
+                "top": 2
+            },
+            "backgroundColor": "#000"
+        }
+    ]
+} 

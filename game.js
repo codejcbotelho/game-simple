@@ -1,20 +1,25 @@
 class Map {
-    constructor(id, platforms = [], enemies = [], items = []) {
-        this.id = id;
-        this.platforms = platforms;
-        this.enemies = enemies.map(enemy => ({
+    constructor(mapData) {
+        this.id = mapData.id;
+        this.name = mapData.name;
+        this.description = mapData.description;
+        this.platforms = mapData.platforms;
+        this.enemies = mapData.enemies.map(enemy => ({
             ...enemy,
-            isAlive: true
+            isAlive: true,
+            x: enemy.initialX,
+            y: enemy.initialY
         }));
-        this.items = items.map(item => ({
+        this.items = mapData.items.map(item => ({
             ...item,
             collected: false
         }));
+        this.connections = mapData.connections;
+        this.backgroundColor = mapData.backgroundColor;
         this.visited = false;
     }
 
     reset() {
-        // Reseta apenas a posição dos inimigos, mantendo seu estado (vivo/morto)
         this.enemies = this.enemies.map(enemy => ({
             ...enemy,
             x: enemy.initialX,
@@ -28,73 +33,83 @@ class Game {
         this.player = document.getElementById('player');
         this.gameContainer = document.querySelector('.game-container');
         
-        // Sistema de mapas
-        this.maps = this.createMaps();
-        this.currentMapIndex = 0;
-        
-        this.playerPos = {
-            x: 50,
-            y: 460
-        };
-        this.velocity = {
-            x: 0,
-            y: 0
-        };
-        this.isJumping = false;
-        this.gravity = 0.5;
-        this.jumpForce = -12;
-        this.speed = 5;
+        this.loadMaps().then(() => {
+            this.currentMapIndex = 0;
+            
+            this.playerPos = {
+                x: 50,
+                y: 460
+            };
+            this.velocity = {
+                x: 0,
+                y: 0
+            };
+            this.isJumping = false;
+            this.isOnLadder = false;
+            this.gravity = 0.5;
+            this.jumpForce = -12;
+            this.speed = 5;
+            this.fallThreshold = 600;
+            this.score = 0;
+            this.health = 100;
+            this.projectiles = [];
+            this.lastDamageTime = 0;
+            this.damageInvincibilityTime = 1000; // 1 segundo de invencibilidade após dano
 
-        this.keys = {
-            w: false,
-            a: false,
-            s: false,
-            d: false
-        };
+            this.keys = {
+                w: false,
+                a: false,
+                s: false,
+                d: false,
+                ' ': false
+            };
 
-        this.setupMap(this.currentMapIndex);
-        this.updatePlayerPosition();
-        this.setupControls();
-        this.gameLoop();
+            // Criar HUD
+            this.createHUD();
+            this.setupMap(this.currentMapIndex);
+            this.updatePlayerPosition();
+            this.setupControls();
+            this.gameLoop();
+        });
     }
 
-    createMaps() {
-        return [
-            new Map(0, [
-                { x: 0, y: 560, width: 800, height: 40, color: '#4a4a4a' }, // Plataforma base
-                { x: 200, y: 400, width: 100, height: 20, color: '#666' }   // Plataforma flutuante
-            ], [
-                { initialX: 300, initialY: 520, width: 30, height: 30, color: '#ff6b6b', speed: 2 }
-            ]),
-            new Map(1, [
-                { x: 0, y: 560, width: 800, height: 40, color: '#4a4a4a' },
-                { x: 400, y: 300, width: 200, height: 20, color: '#666' }
-            ], [
-                { initialX: 500, initialY: 520, width: 30, height: 30, color: '#ff6b6b', speed: 3 }
-            ]),
-            new Map(2, [
-                { x: 0, y: 560, width: 800, height: 40, color: '#4a4a4a' },
-                { x: 100, y: 450, width: 100, height: 20, color: '#666' },
-                { x: 300, y: 350, width: 100, height: 20, color: '#666' },
-                { x: 500, y: 250, width: 100, height: 20, color: '#666' }
-            ], [
-                { initialX: 400, initialY: 520, width: 30, height: 30, color: '#ff6b6b', speed: 2.5 }
-            ])
-        ];
+    async loadMaps() {
+        try {
+            const response = await fetch('maps.json');
+            const data = await response.json();
+            this.maps = data.maps.map(mapData => new Map(mapData));
+        } catch (error) {
+            console.error('Erro ao carregar os mapas:', error);
+            // Fallback para mapas básicos em caso de erro
+            this.maps = [
+                new Map({
+                    id: 0,
+                    name: "Mapa Básico",
+                    platforms: [{ x: 0, y: 560, width: 800, height: 40, color: "#4a4a4a", type: "ground" }],
+                    enemies: [],
+                    items: [],
+                    connections: {},
+                    backgroundColor: "#000"
+                })
+            ];
+        }
     }
 
     setupMap(mapIndex) {
         // Limpar elementos existentes
-        const platforms = this.gameContainer.querySelectorAll('.platform, .enemy');
-        platforms.forEach(platform => platform.remove());
+        const elements = this.gameContainer.querySelectorAll('.platform, .enemy, .item');
+        elements.forEach(element => element.remove());
 
         const currentMap = this.maps[mapIndex];
         currentMap.visited = true;
 
+        // Definir cor de fundo
+        this.gameContainer.style.backgroundColor = currentMap.backgroundColor;
+
         // Criar plataformas
         currentMap.platforms.forEach(platform => {
             const platformElement = document.createElement('div');
-            platformElement.className = 'platform';
+            platformElement.className = `platform ${platform.type}`;
             platformElement.style.cssText = `
                 position: absolute;
                 left: ${platform.x}px;
@@ -110,11 +125,11 @@ class Game {
         currentMap.enemies.forEach(enemy => {
             if (enemy.isAlive) {
                 const enemyElement = document.createElement('div');
-                enemyElement.className = 'enemy';
+                enemyElement.className = `enemy ${enemy.type}`;
                 enemyElement.style.cssText = `
                     position: absolute;
-                    left: ${enemy.initialX}px;
-                    top: ${enemy.initialY}px;
+                    left: ${enemy.x}px;
+                    top: ${enemy.y}px;
                     width: ${enemy.width}px;
                     height: ${enemy.height}px;
                     background-color: ${enemy.color};
@@ -122,23 +137,40 @@ class Game {
                 this.gameContainer.appendChild(enemyElement);
             }
         });
+
+        // Criar itens
+        currentMap.items.forEach(item => {
+            if (!item.collected) {
+                const itemElement = document.createElement('div');
+                itemElement.className = `item ${item.type}`;
+                itemElement.style.cssText = `
+                    position: absolute;
+                    left: ${item.x}px;
+                    top: ${item.y}px;
+                    width: 20px;
+                    height: 20px;
+                    background-color: gold;
+                    border-radius: 50%;
+                    z-index: 5;
+                `;
+                this.gameContainer.appendChild(itemElement);
+            }
+        });
     }
 
-    changeMap(direction) {
-        // direction: 1 para direita, -1 para esquerda
-        const newMapIndex = this.currentMapIndex + direction;
-        
-        if (newMapIndex >= 0 && newMapIndex < this.maps.length) {
-            this.currentMapIndex = newMapIndex;
-            this.setupMap(this.currentMapIndex);
-            
-            // Ajustar posição do jogador
-            if (direction > 0) {
-                this.playerPos.x = 50; // Início do mapa
-            } else {
-                this.playerPos.x = 710; // Final do mapa
-            }
-        }
+    createHUD() {
+        const hud = document.createElement('div');
+        hud.className = 'hud';
+        hud.innerHTML = `
+            <div class="health">HP: <span id="health">100</span></div>
+            <div class="score">Score: <span id="score">0</span></div>
+        `;
+        this.gameContainer.appendChild(hud);
+    }
+
+    updateHUD() {
+        document.getElementById('health').textContent = this.health;
+        document.getElementById('score').textContent = this.score;
     }
 
     setupControls() {
@@ -147,11 +179,16 @@ class Game {
             
             if (this.keys.hasOwnProperty(key)) {
                 this.keys[key] = true;
+                e.preventDefault();
             }
             
-            if (key === 'w' && !this.isJumping) {
+            if (key === 'w' && !this.isJumping && !this.isOnLadder) {
                 this.velocity.y = this.jumpForce;
                 this.isJumping = true;
+            }
+
+            if (key === ' ') {
+                this.shootProjectile();
             }
         });
 
@@ -159,6 +196,138 @@ class Game {
             const key = e.key.toLowerCase();
             if (this.keys.hasOwnProperty(key)) {
                 this.keys[key] = false;
+            }
+        });
+    }
+
+    shootProjectile() {
+        const projectile = document.createElement('div');
+        projectile.className = 'projectile';
+        const direction = this.player.style.transform.includes('scaleX(-1)') ? -1 : 1;
+        
+        const projectileData = {
+            element: projectile,
+            x: this.playerPos.x + (direction > 0 ? 40 : 0),
+            y: this.playerPos.y + 20,
+            velocity: 10 * direction
+        };
+
+        projectile.style.cssText = `
+            position: absolute;
+            left: ${projectileData.x}px;
+            top: ${projectileData.y}px;
+            width: 10px;
+            height: 10px;
+            background-color: #fff;
+            border-radius: 50%;
+            z-index: 8;
+            box-shadow: 0 0 5px #fff;
+        `;
+
+        this.gameContainer.appendChild(projectile);
+        this.projectiles.push(projectileData);
+    }
+
+    updateProjectiles() {
+        for (let i = this.projectiles.length - 1; i >= 0; i--) {
+            const projectile = this.projectiles[i];
+            projectile.x += projectile.velocity;
+            projectile.element.style.left = projectile.x + 'px';
+
+            // Verificar colisão com inimigos
+            const currentMap = this.maps[this.currentMapIndex];
+            for (let enemy of currentMap.enemies) {
+                if (enemy.isAlive && this.checkCollision(
+                    projectile.x, projectile.y, 10, 10,
+                    enemy.x, enemy.y, enemy.width, enemy.height
+                )) {
+                    enemy.isAlive = false;
+                    this.score += 50;
+                    const enemyElement = this.gameContainer.querySelector(`.enemy[style*="left: ${enemy.x}px"]`);
+                    if (enemyElement) enemyElement.remove();
+                    
+                    // Remover projétil
+                    projectile.element.remove();
+                    this.projectiles.splice(i, 1);
+                    break;
+                }
+            }
+
+            // Remover projéteis fora da tela
+            if (projectile.x < 0 || projectile.x > 800) {
+                projectile.element.remove();
+                this.projectiles.splice(i, 1);
+            }
+        }
+    }
+
+    checkCollision(x1, y1, w1, h1, x2, y2, w2, h2) {
+        return x1 < x2 + w2 &&
+               x1 + w1 > x2 &&
+               y1 < y2 + h2 &&
+               y1 + h1 > y2;
+    }
+
+    checkLadderCollision() {
+        const currentMap = this.maps[this.currentMapIndex];
+        this.isOnLadder = false;
+
+        currentMap.platforms.forEach(platform => {
+            if (platform.type === 'ladder') {
+                if (this.checkCollision(
+                    this.playerPos.x, this.playerPos.y, 40, 40,
+                    platform.x, platform.y, platform.width, platform.height
+                )) {
+                    this.isOnLadder = true;
+                }
+            }
+        });
+
+        return this.isOnLadder;
+    }
+
+    checkEnemyCollision() {
+        const currentMap = this.maps[this.currentMapIndex];
+        const currentTime = Date.now();
+
+        if (currentTime - this.lastDamageTime < this.damageInvincibilityTime) {
+            return;
+        }
+
+        currentMap.enemies.forEach(enemy => {
+            if (enemy.isAlive && this.checkCollision(
+                this.playerPos.x, this.playerPos.y, 40, 40,
+                enemy.x, enemy.y, enemy.width, enemy.height
+            )) {
+                this.health -= 10;
+                this.lastDamageTime = currentTime;
+                this.player.classList.add('damaged');
+                setTimeout(() => this.player.classList.remove('damaged'), 200);
+
+                if (this.health <= 0) {
+                    alert('Game Over!');
+                    location.reload();
+                }
+            }
+        });
+    }
+
+    checkItemCollision() {
+        const currentMap = this.maps[this.currentMapIndex];
+        
+        currentMap.items.forEach(item => {
+            if (!item.collected && this.checkCollision(
+                this.playerPos.x, this.playerPos.y, 40, 40,
+                item.x, item.y, 20, 20
+            )) {
+                item.collected = true;
+                if (item.type === 'coin') {
+                    this.score += item.value;
+                }
+                const itemElement = this.gameContainer.querySelector(`.item[style*="left: ${item.x}px"]`);
+                if (itemElement) {
+                    itemElement.remove();
+                }
             }
         });
     }
@@ -195,22 +364,36 @@ class Game {
         // Movimento horizontal
         if (this.keys.a) {
             this.velocity.x = -this.speed;
+            this.player.style.transform = `translate(${this.playerPos.x}px, ${this.playerPos.y}px) scaleX(-1)`;
         } else if (this.keys.d) {
             this.velocity.x = this.speed;
+            this.player.style.transform = `translate(${this.playerPos.x}px, ${this.playerPos.y}px)`;
         } else {
             this.velocity.x = 0;
         }
 
-        // Aplicar gravidade
-        this.velocity.y += this.gravity;
+        // Verificar escada
+        this.checkLadderCollision();
+
+        // Movimento vertical na escada
+        if (this.isOnLadder) {
+            this.velocity.y = 0;
+            if (this.keys.w) {
+                this.velocity.y = -this.speed;
+            } else if (this.keys.s) {
+                this.velocity.y = this.speed;
+            }
+        } else {
+            // Aplicar gravidade quando não estiver na escada
+            this.velocity.y += this.gravity;
+        }
 
         // Atualizar posição
         this.playerPos.x += this.velocity.x;
         this.playerPos.y += this.velocity.y;
 
-        // Verificar colisões com plataformas
-        if (!this.checkPlatformCollisions()) {
-            // Se não estiver em nenhuma plataforma, verificar colisão com o chão
+        // Verificar colisões
+        if (!this.isOnLadder && !this.checkPlatformCollisions()) {
             const floor = 520;
             if (this.playerPos.y > floor) {
                 this.playerPos.y = floor;
@@ -219,19 +402,62 @@ class Game {
             }
         }
 
-        // Verificar mudança de mapa
-        if (this.playerPos.x > 760) {
-            this.changeMap(1);
-        } else if (this.playerPos.x < 0) {
-            this.changeMap(-1);
+        // Verificar mudança vertical de mapa
+        if (this.isOnLadder) {
+            const currentMap = this.maps[this.currentMapIndex];
+            if (this.playerPos.y < -40 && currentMap.connections.top !== undefined) {
+                this.changeMap(currentMap.connections.top, 'top');
+            } else if (this.playerPos.y > 600 && currentMap.connections.bottom !== undefined) {
+                this.changeMap(currentMap.connections.bottom, 'bottom');
+            }
+        }
+
+        // Verificar mudança horizontal de mapa
+        const currentMap = this.maps[this.currentMapIndex];
+        if (this.playerPos.x > 760 && currentMap.connections.right !== undefined) {
+            this.changeMap(currentMap.connections.right, 'right');
+        } else if (this.playerPos.x < 0 && currentMap.connections.left !== undefined) {
+            this.changeMap(currentMap.connections.left, 'left');
         }
 
         // Limites horizontais do mapa atual
         if (this.playerPos.x < 0) this.playerPos.x = 0;
         if (this.playerPos.x > 760) this.playerPos.x = 760;
 
+        // Atualizar projéteis
+        this.updateProjectiles();
+
+        // Verificar colisões com inimigos e itens
+        this.checkEnemyCollision();
+        this.checkItemCollision();
+
+        // Atualizar HUD
+        this.updateHUD();
+
         // Atualizar posição visual do player
-        this.updatePlayerPosition();
+        if (!this.keys.a && !this.keys.d) {
+            this.updatePlayerPosition();
+        }
+    }
+
+    changeMap(newMapIndex, direction) {
+        this.currentMapIndex = newMapIndex;
+        this.setupMap(this.currentMapIndex);
+        
+        switch (direction) {
+            case 'right':
+                this.playerPos.x = 50;
+                break;
+            case 'left':
+                this.playerPos.x = 710;
+                break;
+            case 'top':
+                this.playerPos.y = 520;
+                break;
+            case 'bottom':
+                this.playerPos.y = 0;
+                break;
+        }
     }
 
     gameLoop() {

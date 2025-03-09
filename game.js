@@ -320,7 +320,8 @@ class Game {
     }
 
     setupControls() {
-        document.addEventListener('keydown', (e) => {
+        // Criar referências para os handlers que possam ser removidos depois
+        this.handleKeyDown = (e) => {
             const key = e.key.toLowerCase();
             
             // Verificar tecla ESC para pausar
@@ -349,14 +350,17 @@ class Game {
             if (key === ' ') {
                 this.shootProjectile();
             }
-        });
+        };
 
-        document.addEventListener('keyup', (e) => {
+        this.handleKeyUp = (e) => {
             const key = e.key.toLowerCase();
             if (this.keys.hasOwnProperty(key)) {
                 this.keys[key] = false;
             }
-        });
+        };
+
+        document.addEventListener('keydown', this.handleKeyDown);
+        document.addEventListener('keyup', this.handleKeyUp);
     }
 
     shootProjectile() {
@@ -560,8 +564,7 @@ class Game {
                 setTimeout(() => this.player.classList.remove('damaged'), 200);
 
                 if (this.health <= 0) {
-                    alert('Game Over!');
-                    location.reload();
+                    this.gameOver();
                 }
             }
         });
@@ -720,6 +723,65 @@ class Game {
             this.update();
         }
         requestAnimationFrame(() => this.gameLoop());
+    }
+
+    createGameOverScreen() {
+        const gameOverScreen = document.createElement('div');
+        gameOverScreen.className = 'game-over-screen';
+        
+        const gameOverTitle = document.createElement('div');
+        gameOverTitle.className = 'game-over-title';
+        gameOverTitle.textContent = 'Game Over';
+        
+        const gameOverScore = document.createElement('div');
+        gameOverScore.className = 'game-over-score';
+        gameOverScore.textContent = `Pontuação Final: ${this.score}`;
+        
+        const restartButton = document.createElement('button');
+        restartButton.className = 'restart-button';
+        restartButton.textContent = 'Jogar Novamente';
+        
+        gameOverScreen.appendChild(gameOverTitle);
+        gameOverScreen.appendChild(gameOverScore);
+        gameOverScreen.appendChild(restartButton);
+        
+        this.gameContainer.appendChild(gameOverScreen);
+        
+        restartButton.addEventListener('click', () => {
+            this.restartGame();
+        });
+    }
+
+    restartGame() {
+        // Limpar o container do jogo
+        while (this.gameContainer.firstChild) {
+            this.gameContainer.firstChild.remove();
+        }
+        
+        // Resetar estado do jogo
+        this.isPaused = false;
+        this.projectiles = [];
+        this.lastDamageTime = 0;
+        
+        // Remover todos os event listeners antigos
+        document.removeEventListener('keydown', this.handleKeyDown);
+        document.removeEventListener('keyup', this.handleKeyUp);
+        
+        // Reiniciar o jogo
+        this.initializeGame();
+    }
+
+    gameOver() {
+        // Não usar isPaused aqui, apenas parar as animações
+        this.gameContainer.classList.add('paused');
+        
+        // Pausar todas as animações existentes
+        const animatedElements = this.gameContainer.querySelectorAll('.enemy, .item, .projectile, .explosion');
+        animatedElements.forEach(element => {
+            element.style.animationPlayState = 'paused';
+        });
+        
+        this.createGameOverScreen();
     }
 }
 

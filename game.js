@@ -58,7 +58,14 @@ class Game {
     }
 
     initializeGame() {
+        // Criar o elemento do jogador se ele não existir
         this.player = document.getElementById('player');
+        if (!this.player) {
+            this.player = document.createElement('div');
+            this.player.id = 'player';
+            document.querySelector('.game-container').appendChild(this.player);
+        }
+        
         this.gameContainer = document.querySelector('.game-container');
         
         this.loadMaps().then(() => {
@@ -263,6 +270,7 @@ class Game {
         }
         
         // Reiniciar o jogo voltando para a tela inicial
+        this.isPaused = false;
         this.createStartScreen();
     }
 

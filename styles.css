@@ -87,10 +87,90 @@ body {
     box-shadow: 0 0 8px rgba(255, 0, 0, 0.5);
     transition: transform 0.1s;
     z-index: 5;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: transparent;
 }
 
 .enemy.patrol {
     animation: patrol 2s linear infinite alternate;
+}
+
+.enemy.basic {
+    background-color: #ff0000;
+    width: 30px;
+    height: 30px;
+}
+
+.enemy.armored {
+    background-color: #8b0000;
+    border: 3px solid #cd853f;
+    width: 40px;
+    height: 40px;
+    box-shadow: 0 0 12px rgba(205, 133, 63, 0.6);
+}
+
+.enemy.boss {
+    background-color: #4b0082;
+    border: 4px solid #ffd700;
+    width: 50px;
+    height: 50px;
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.7);
+}
+
+.enemy-health-bar {
+    position: absolute;
+    width: 120%;
+    height: 6px;
+    background-color: rgba(0, 0, 0, 0.7);
+    top: -12px;
+    left: -10%;
+    border-radius: 3px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    box-shadow: 0 0 4px rgba(0, 0, 0, 0.5);
+    z-index: 6;
+}
+
+.enemy-health-fill {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(90deg, #2ecc71, #27ae60);
+    transition: width 0.3s ease-out;
+    left: 0;
+    top: 0;
+}
+
+.enemy.armored .enemy-health-fill {
+    background: linear-gradient(90deg, #e67e22, #d35400);
+}
+
+.enemy.boss .enemy-health-fill {
+    background: linear-gradient(90deg, #9b59b6, #8e44ad);
+}
+
+.damage-number {
+    position: absolute;
+    color: white;
+    font-family: Arial, sans-serif;
+    font-weight: bold;
+    font-size: 16px;
+    text-shadow: 0 0 3px #000;
+    animation: float-damage 0.8s ease-out forwards;
+    z-index: 20;
+}
+
+@keyframes float-damage {
+    0% {
+        transform: translateY(0);
+        opacity: 1;
+    }
+    100% {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
 }
 
 .item {

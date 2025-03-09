@@ -82,41 +82,73 @@ body {
 
 .enemy {
     position: absolute;
+    border: 2px solid #f00;
+    background-color: rgba(255, 0, 0, 0.5);
+    z-index: 10;
+    box-shadow: 0 0 5px rgba(255, 0, 0, 0.5);
+    transition: all 0.1s ease-out;
+    transform-origin: center;
+}
+
+.enemy::before {
+    content: '';
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background: white;
     border-radius: 50%;
-    border: 2px solid #fff;
-    box-shadow: 0 0 8px rgba(255, 0, 0, 0.5);
-    transition: transform 0.1s;
-    z-index: 5;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    background-color: transparent;
+    top: 20%;
+    right: 25%;
+    box-shadow: 0 0 3px rgba(255, 255, 255, 0.8);
 }
 
 .enemy.patrol {
-    animation: patrol 2s linear infinite alternate;
+    animation: patrol 2s infinite ease-in-out;
+}
+
+.enemy.chasing {
+    border-color: #ff0000;
+    background-color: rgba(255, 0, 0, 0.7);
+    box-shadow: 0 0 10px rgba(255, 0, 0, 0.7);
+    animation: none;
+}
+
+.enemy.chasing::before {
+    background: yellow;
+    box-shadow: 0 0 5px rgba(255, 255, 0, 0.8);
 }
 
 .enemy.basic {
-    background-color: #ff0000;
-    width: 30px;
-    height: 30px;
+    border-radius: 5px;
+    border-color: #f55;
+    background-color: rgba(255, 80, 80, 0.5);
 }
 
 .enemy.armored {
-    background-color: #8b0000;
-    border: 3px solid #cd853f;
-    width: 40px;
-    height: 40px;
-    box-shadow: 0 0 12px rgba(205, 133, 63, 0.6);
+    border-radius: 8px;
+    border: 3px solid #a52a2a;
+    background-color: rgba(139, 69, 19, 0.6);
+    box-shadow: 0 0 8px rgba(139, 69, 19, 0.6), inset 0 0 10px rgba(205, 133, 63, 0.4);
+}
+
+.enemy.armored.chasing {
+    border-color: #cd5c5c;
+    background-color: rgba(139, 69, 19, 0.8);
+    box-shadow: 0 0 12px rgba(139, 69, 19, 0.8), inset 0 0 15px rgba(205, 133, 63, 0.6);
 }
 
 .enemy.boss {
-    background-color: #4b0082;
-    border: 4px solid #ffd700;
-    width: 50px;
-    height: 50px;
-    box-shadow: 0 0 15px rgba(255, 215, 0, 0.7);
+    border-radius: 10px;
+    border: 4px solid #800080;
+    background-color: rgba(128, 0, 128, 0.6);
+    box-shadow: 0 0 15px rgba(128, 0, 128, 0.6), inset 0 0 20px rgba(218, 112, 214, 0.4);
+}
+
+.enemy.boss.chasing {
+    border-color: #ffd700;
+    background-color: rgba(128, 0, 128, 0.8);
+    box-shadow: 0 0 20px rgba(255, 215, 0, 0.8), inset 0 0 25px rgba(218, 112, 214, 0.6);
+    filter: brightness(1.3);
 }
 
 .enemy-health-bar {
@@ -204,12 +236,9 @@ body {
 }
 
 @keyframes patrol {
-    from {
-        transform: translateX(-50px);
-    }
-    to {
-        transform: translateX(50px);
-    }
+    0% { transform: translateY(0); }
+    50% { transform: translateY(-5px); }
+    100% { transform: translateY(0); }
 }
 
 @keyframes float {
@@ -430,4 +459,49 @@ body {
         transform: scale(1);
         text-shadow: 0 0 20px rgba(255, 0, 0, 0.8);
     }
+}
+
+@keyframes jump {
+    0%, 100% { transform: translateY(0) scaleY(1); }
+    50% { transform: translateY(-30px) scaleY(0.9); }
+}
+
+.enemy.jumping {
+    animation: jump 0.5s ease-out;
+}
+
+/* Barra de progresso de inimigos */
+.progress-container {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    width: 200px;
+    height: 24px;
+    background-color: rgba(0, 0, 0, 0.7);
+    border: 1px solid #fff;
+    border-radius: 12px;
+    overflow: hidden;
+    z-index: 100;
+}
+
+.progress-bar {
+    height: 100%;
+    width: 100%;
+    background: linear-gradient(to right, #ff3019 0%, #cf0404 100%);
+    transition: width 0.3s ease-out;
+}
+
+.progress-text {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.8);
 } 

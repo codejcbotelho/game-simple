@@ -88,6 +88,7 @@ class Game {
             this.score = 0;
             this.health = 100;
             this.projectiles = [];
+            this.enemies = []; // Inicializar o array de inimigos
             this.lastDamageTime = 0;
             this.damageInvincibilityTime = 1000;
 
@@ -130,18 +131,23 @@ class Game {
     }
 
     setupMap(mapIndex) {
-        // Limpar elementos existentes
-        const elements = this.gameContainer.querySelectorAll('.platform, .enemy, .item');
-        elements.forEach(element => element.remove());
-
         const currentMap = this.maps[mapIndex];
-        currentMap.visited = true;
-
-        // Contar total de inimigos vivos no mapa
-        this.totalEnemies = currentMap.enemies.filter(enemy => enemy.isAlive).length;
-        this.remainingEnemies = this.totalEnemies;
-
-        // Definir cor de fundo
+        this.currentMapIndex = mapIndex;
+        
+        // Limpar elementos existentes
+        const platforms = document.querySelectorAll('.platform');
+        platforms.forEach(platform => platform.remove());
+        
+        const existingEnemies = document.querySelectorAll('.enemy');
+        existingEnemies.forEach(enemy => enemy.remove());
+        
+        const items = document.querySelectorAll('.item');
+        items.forEach(item => item.remove());
+        
+        // Limpar o array de inimigos
+        this.enemies = [];
+        
+        // Definir a cor de fundo
         this.gameContainer.style.backgroundColor = currentMap.backgroundColor;
 
         // Criar plataformas
@@ -160,52 +166,16 @@ class Game {
         });
 
         // Criar inimigos
-        currentMap.enemies.forEach(enemy => {
-            if (enemy.isAlive) {
+        if (currentMap.enemies) {
+            currentMap.enemies.forEach(enemy => {
                 const enemyElement = document.createElement('div');
-                
-                // Configurar vida baseado no tipo
-                switch(enemy.type) {
-                    case 'basic':
-                        enemy.maxHealth = 100;
-                        enemy.damage = 10;
-                        enemy.width = 30;
-                        enemy.height = 30;
-                        break;
-                    case 'armored':
-                        enemy.maxHealth = 200;
-                        enemy.damage = 20;
-                        enemy.width = 40;
-                        enemy.height = 40;
-                        break;
-                    case 'boss':
-                        enemy.maxHealth = 500;
-                        enemy.damage = 30;
-                        enemy.width = 50;
-                        enemy.height = 50;
-                        break;
-                    default:
-                        enemy.maxHealth = 100;
-                        enemy.damage = 10;
-                        enemy.width = 30;
-                        enemy.height = 30;
-                }
-                
-                // Inicializar vida atual
-                if (!enemy.currentHealth) {
-                    enemy.currentHealth = enemy.maxHealth;
-                }
-
                 enemyElement.className = `enemy ${enemy.type}`;
-                enemyElement.style.cssText = `
-                    position: absolute;
-                    left: ${enemy.x}px;
-                    top: ${enemy.y}px;
-                    width: ${enemy.width}px;
-                    height: ${enemy.height}px;
-                `;
+                enemyElement.style.width = `${enemy.width}px`;
+                enemyElement.style.height = `${enemy.height}px`;
+                enemyElement.style.left = `${enemy.initialX}px`;
+                enemyElement.style.top = `${enemy.initialY}px`;
                 
-                // Criar barra de vida
+                // Adicionar barra de vida
                 const healthBar = document.createElement('div');
                 healthBar.className = 'enemy-health-bar';
                 const healthFill = document.createElement('div');
@@ -214,8 +184,68 @@ class Game {
                 enemyElement.appendChild(healthBar);
                 
                 this.gameContainer.appendChild(enemyElement);
-            }
-        });
+                
+                // Configurar atributos do inimigo baseado no tipo
+                let health = 100;
+                let damage = 10;
+                let points = 50;
+                
+                switch(enemy.type) {
+                    case 'armored':
+                        health = 200;
+                        damage = 20;
+                        points = 100;
+                        break;
+                    case 'boss':
+                        health = 500;
+                        damage = 30;
+                        points = 500;
+                        break;
+                }
+                
+                // Configurar comportamento de movimento específico para cada tipo
+                let movementType = 'patrol';
+                
+                switch(enemy.type) {
+                    case 'basic':
+                        movementType = 'patrol';
+                        break;
+                    case 'armored':
+                        movementType = 'chase';
+                        break;
+                    case 'boss':
+                        movementType = 'complex';
+                        break;
+                }
+                
+                this.enemies.push({
+                    element: enemyElement,
+                    health: health,
+                    maxHealth: health,
+                    damage: damage,
+                    points: points,
+                    x: enemy.initialX,
+                    y: enemy.initialY,
+                    width: enemy.width,
+                    height: enemy.height,
+                    type: enemy.type,
+                    movementType: movementType,
+                    initialX: enemy.initialX,
+                    speed: enemy.speed || (enemy.type === 'basic' ? 3 : enemy.type === 'armored' ? 2 : 1),
+                    facingLeft: false,
+                    patrolDistance: enemy.patrolDistance || 150,
+                    direction: 1,
+                    isChasing: false,
+                    jumpTimer: 0,
+                    isJumping: false
+                });
+            });
+
+            // Atualizar contagem de inimigos e barra de progresso
+            this.totalEnemies = this.enemies.length;
+            this.remainingEnemies = this.totalEnemies;
+            this.updateProgress();
+        }
 
         // Criar itens
         currentMap.items.forEach(item => {
@@ -410,100 +440,119 @@ class Game {
         for (let i = this.projectiles.length - 1; i >= 0; i--) {
             const projectile = this.projectiles[i];
             
+            // Atualizar posição do projétil
             projectile.x += projectile.velocityX;
             projectile.y += projectile.velocityY;
             
+            // Atualizar elemento visual
             projectile.element.style.left = `${projectile.x}px`;
             projectile.element.style.top = `${projectile.y}px`;
-
-            const currentMap = this.maps[this.currentMapIndex];
-            for (let enemy of currentMap.enemies) {
-                if (enemy.isAlive) {
-                    const projectileHitbox = {
-                        x: projectile.x - 5,
-                        y: projectile.y - 5,
-                        width: 20,
-                        height: 20
-                    };
-
-                    if (this.checkCollision(
-                        projectileHitbox.x, projectileHitbox.y,
-                        projectileHitbox.width, projectileHitbox.height,
-                        enemy.x, enemy.y, enemy.width, enemy.height
-                    )) {
-                        // Calcular dano baseado no tipo do inimigo
-                        let damage = 20; // Dano base do projétil
-                        switch(enemy.type) {
-                            case 'armored':
-                                damage = Math.floor(damage * 0.7); // 30% de redução de dano
-                                break;
-                            case 'boss':
-                                damage = Math.floor(damage * 0.5); // 50% de redução de dano
-                                break;
-                        }
-
-                        // Aplicar dano
-                        enemy.currentHealth -= damage;
-
-                        // Mostrar número do dano
-                        this.showDamageNumber(damage, enemy.x, enemy.y);
-
-                        // Atualizar barra de vida
-                        const enemyElement = this.gameContainer.querySelector(`.enemy[style*="left: ${Math.round(enemy.x)}px"]`);
-                        if (enemyElement) {
-                            const healthFill = enemyElement.querySelector('.enemy-health-fill');
-                            if (healthFill) {
-                                const healthPercentage = (enemy.currentHealth / enemy.maxHealth) * 100;
-                                healthFill.style.width = `${Math.max(0, healthPercentage)}%`;
-                            }
-                        }
-
-                        // Verificar se o inimigo morreu
-                        if (enemy.currentHealth <= 0) {
-                            enemy.isAlive = false;
-                            this.remainingEnemies--;
-                            
-                            // Pontuação baseada no tipo do inimigo
-                            switch(enemy.type) {
-                                case 'basic':
-                                    this.score += 50;
-                                    break;
-                                case 'armored':
-                                    this.score += 100;
-                                    break;
-                                case 'boss':
-                                    this.score += 500;
-                                    break;
-                            }
-
-                            // Criar explosão
-                            const explosion = document.createElement('div');
-                            explosion.className = 'explosion';
-                            explosion.style.cssText = `
-                                position: absolute;
-                                left: ${enemy.x}px;
-                                top: ${enemy.y}px;
-                                width: ${enemy.width}px;
-                                height: ${enemy.height}px;
-                            `;
-                            this.gameContainer.appendChild(explosion);
-                            setTimeout(() => explosion.remove(), 300);
-
-                            if (enemyElement) enemyElement.remove();
-                        }
-
-                        // Remover projétil
-                        projectile.element.remove();
-                        this.projectiles.splice(i, 1);
-                        break;
+            
+            // Criar hitbox aumentada para melhorar a detecção de colisão
+            const projectileHitbox = {
+                x: projectile.x - 10,
+                y: projectile.y - 10,
+                width: 30,
+                height: 30
+            };
+            
+            // Verificar colisão com inimigos
+            let hitEnemy = false;
+            
+            for (let j = 0; j < this.enemies.length; j++) {
+                const enemy = this.enemies[j];
+                
+                if (enemy.health > 0 && this.checkCollision(
+                    projectileHitbox.x, projectileHitbox.y, projectileHitbox.width, projectileHitbox.height,
+                    enemy.x, enemy.y, enemy.width, enemy.height
+                )) {
+                    // Calcular dano baseado no tipo de inimigo
+                    const baseDamage = 20;
+                    let damageReduction = 0;
+                    
+                    // Aplicar redução de dano baseado no tipo
+                    switch(enemy.type) {
+                        case 'armored':
+                            damageReduction = 0.3; // 30% redução
+                            break;
+                        case 'boss':
+                            damageReduction = 0.5; // 50% redução
+                            break;
                     }
+                    
+                    // Calcular dano final
+                    const actualDamage = Math.floor(baseDamage * (1 - damageReduction));
+                    
+                    // Subtrair vida do inimigo
+                    enemy.health -= actualDamage;
+                    
+                    // Atualizar barra de vida
+                    const healthPercentage = (enemy.health / enemy.maxHealth) * 100;
+                    const healthFill = enemy.element.querySelector('.enemy-health-fill');
+                    if (healthFill) {
+                        healthFill.style.width = `${Math.max(0, healthPercentage)}%`;
+                    }
+                    
+                    // Mostrar número de dano
+                    this.showDamageNumber(actualDamage, enemy.x + enemy.width / 2, enemy.y);
+                    
+                    // Criar efeito de explosão do projétil
+                    const explosion = document.createElement('div');
+                    explosion.className = 'explosion';
+                    explosion.style.left = `${projectile.x - 10}px`;
+                    explosion.style.top = `${projectile.y - 10}px`;
+                    this.gameContainer.appendChild(explosion);
+                    
+                    setTimeout(() => {
+                        if (explosion.parentNode === this.gameContainer) {
+                            this.gameContainer.removeChild(explosion);
+                        }
+                    }, 300);
+                    
+                    // Verificar se o inimigo foi derrotado
+                    if (enemy.health <= 0) {
+                        // Adicionar pontos
+                        this.score += enemy.points;
+                        this.updateHUD();
+                        
+                        // Remover inimigo
+                        enemy.element.classList.add('explosion');
+                        setTimeout(() => {
+                            if (enemy.element.parentNode === this.gameContainer) {
+                                this.gameContainer.removeChild(enemy.element);
+                            }
+                        }, 300);
+                        
+                        // Atualizar contagem de inimigos restantes
+                        this.remainingEnemies--;
+                        this.updateProgress();
+                        
+                        // Verificar se todos os inimigos foram derrotados
+                        if (this.remainingEnemies <= 0) {
+                            alert('Fase concluída! Todos os inimigos foram derrotados.');
+                            this.changeMap(this.currentMapIndex + 1, 'right');
+                        }
+                    }
+                    
+                    // Remover projétil
+                    this.projectiles.splice(i, 1);
+                    this.gameContainer.removeChild(projectile.element);
+                    hitEnemy = true;
+                    break;
                 }
             }
-
-            if (projectile.x < 0 || projectile.x > 800 || 
-                projectile.y < 0 || projectile.y > 600) {
-                projectile.element.remove();
-                this.projectiles.splice(i, 1);
+            
+            // Se o projétil não atingiu um inimigo, verificar limites da tela
+            if (!hitEnemy) {
+                if (
+                    projectile.x < 0 || 
+                    projectile.x > 800 || 
+                    projectile.y < 0 || 
+                    projectile.y > 600
+                ) {
+                    this.projectiles.splice(i, 1);
+                    this.gameContainer.removeChild(projectile.element);
+                }
             }
         }
     }
@@ -546,28 +595,63 @@ class Game {
     }
 
     checkEnemyCollision() {
-        const currentMap = this.maps[this.currentMapIndex];
         const currentTime = Date.now();
-
+        
+        // Verificar colisão com inimigos apenas se o jogador não estiver em período de invencibilidade
         if (currentTime - this.lastDamageTime < this.damageInvincibilityTime) {
             return;
         }
-
-        currentMap.enemies.forEach(enemy => {
-            if (enemy.isAlive && this.checkCollision(
-                this.playerPos.x, this.playerPos.y, 40, 40,
-                enemy.x, enemy.y, enemy.width, enemy.height
-            )) {
-                this.health -= enemy.damage;
-                this.lastDamageTime = currentTime;
-                this.player.classList.add('damaged');
-                setTimeout(() => this.player.classList.remove('damaged'), 200);
-
-                if (this.health <= 0) {
-                    this.gameOver();
+        
+        for (let i = 0; i < this.enemies.length; i++) {
+            const enemy = this.enemies[i];
+            
+            if (enemy.health > 0) {
+                // Ajustar área de colisão para ser um pouco menor que o tamanho visual do inimigo
+                // Isso torna a colisão mais justa para o jogador
+                const collisionAdjustment = enemy.type === 'boss' ? 10 : 5;
+                
+                if (this.checkCollision(
+                    this.playerPos.x, this.playerPos.y, 40, 40,
+                    enemy.x + collisionAdjustment, enemy.y + collisionAdjustment, 
+                    enemy.width - (collisionAdjustment * 2), enemy.height - (collisionAdjustment * 2)
+                )) {
+                    // Calcular dano baseado no tipo do inimigo
+                    let damage = enemy.damage;
+                    
+                    // Chefes causam dano extra quando estão pulando
+                    if (enemy.type === 'boss' && enemy.isJumping) {
+                        damage *= 1.5;
+                    }
+                    
+                    // Inimigos perseguindo causam um pouco mais de dano
+                    if (enemy.isChasing) {
+                        damage *= 1.2;
+                    }
+                    
+                    // Reduzir vida do jogador
+                    this.health -= Math.floor(damage);
+                    this.lastDamageTime = currentTime;
+                    
+                    // Efeito visual de dano
+                    this.player.classList.add('damaged');
+                    setTimeout(() => {
+                        this.player.classList.remove('damaged');
+                    }, 200);
+                    
+                    // Knockback
+                    const knockbackDirection = this.playerPos.x < enemy.x ? -1 : 1;
+                    this.playerPos.x += knockbackDirection * 50;
+                    
+                    // Atualizar HUD
+                    this.updateHUD();
+                    
+                    // Verificar game over
+                    if (this.health <= 0) {
+                        this.gameOver();
+                    }
                 }
             }
-        });
+        }
     }
 
     checkItemCollision() {
@@ -696,6 +780,35 @@ class Game {
         if (!this.keys.a && !this.keys.d) {
             this.updatePlayerPosition();
         }
+
+        // Atualizar inimigos
+        this.enemies.forEach(enemy => {
+            if (enemy.health > 0) {
+                // Comportamento de movimento específico para cada tipo de inimigo
+                switch (enemy.movementType) {
+                    case 'patrol':
+                        this.updatePatrolEnemy(enemy);
+                        break;
+                    case 'chase':
+                        this.updateChaseEnemy(enemy);
+                        break;
+                    case 'complex':
+                        this.updateComplexEnemy(enemy);
+                        break;
+                }
+                
+                // Atualizar posição do elemento inimigo
+                enemy.element.style.left = `${enemy.x}px`;
+                enemy.element.style.top = `${enemy.y}px`;
+                
+                // Atualizar direção do inimigo (virado para esquerda ou direita)
+                if (enemy.facingLeft) {
+                    enemy.element.style.transform = 'scaleX(-1)';
+                } else {
+                    enemy.element.style.transform = 'scaleX(1)';
+                }
+            }
+        });
     }
 
     changeMap(newMapIndex, direction) {
@@ -782,6 +895,147 @@ class Game {
         });
         
         this.createGameOverScreen();
+    }
+
+    // Método para movimento de patrulha (básico)
+    updatePatrolEnemy(enemy) {
+        // Adicionar classe de animação para patrulha
+        enemy.element.classList.add('patrol');
+        
+        // Mudar direção ao atingir limites da patrulha
+        if (enemy.x >= enemy.initialX + enemy.patrolDistance) {
+            enemy.direction = -1;
+            enemy.facingLeft = true;
+        } else if (enemy.x <= enemy.initialX) {
+            enemy.direction = 1;
+            enemy.facingLeft = false;
+        }
+        
+        // Mover inimigo na direção atual
+        enemy.x += enemy.speed * enemy.direction;
+    }
+
+    // Método para movimento de perseguição (blindado)
+    updateChaseEnemy(enemy) {
+        // Verificar se o jogador está próximo (range de detecção)
+        const detectionRange = 250;
+        const minDistance = 20;
+        const dx = this.playerPos.x - enemy.x;
+        const dy = this.playerPos.y - enemy.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance < detectionRange && distance > minDistance) {
+            // Perseguir jogador
+            enemy.isChasing = true;
+            enemy.element.classList.add('chasing');
+            enemy.element.classList.remove('patrol');
+            
+            // Normalizar vetor de direção para movimento
+            const length = Math.sqrt(dx * dx + dy * dy);
+            const ndx = dx / length;
+            const ndy = dy / length;
+            
+            // Atualizar posição
+            enemy.x += ndx * enemy.speed;
+            enemy.y += ndy * enemy.speed;
+            
+            // Atualizar direção
+            enemy.facingLeft = dx < 0;
+        } else {
+            // Voltar ao comportamento de patrulha quando o jogador estiver longe
+            enemy.isChasing = false;
+            enemy.element.classList.remove('chasing');
+            enemy.element.classList.add('patrol');
+            this.updatePatrolEnemy(enemy);
+        }
+    }
+
+    // Método para movimento complexo (chefe)
+    updateComplexEnemy(enemy) {
+        // Incrementar temporizador de salto
+        enemy.jumpTimer++;
+        
+        // Verificar distância do jogador
+        const dx = this.playerPos.x - enemy.x;
+        const dy = this.playerPos.y - enemy.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const detectionRange = 300;
+        
+        if (distance < detectionRange) {
+            // Ativar modo de perseguição
+            enemy.isChasing = true;
+            enemy.element.classList.add('chasing');
+            enemy.element.classList.remove('patrol');
+            
+            // Decidir ação com base na distância e temporizador
+            if (distance < 150 && enemy.jumpTimer > 100 && !enemy.isJumping) {
+                // Realizar salto para atacar o jogador
+                enemy.isJumping = true;
+                enemy.jumpVelocity = -10; // Velocidade inicial do salto (para cima)
+                enemy.jumpTimer = 0;
+                enemy.element.classList.add('jumping');
+            } else if (enemy.isJumping) {
+                // Atualizar salto
+                enemy.jumpVelocity += 0.5; // Gravidade
+                enemy.y += enemy.jumpVelocity;
+                
+                // Verificar aterrissagem
+                if (enemy.y >= enemy.initialY) {
+                    enemy.y = enemy.initialY;
+                    enemy.isJumping = false;
+                    enemy.element.classList.remove('jumping');
+                }
+            } else {
+                // Movimento horizontal em direção ao jogador
+                const moveSpeed = enemy.speed * 0.7; // Movimento mais lento que o normal
+                
+                // Normalizar movimento horizontal
+                if (Math.abs(dx) > 10) { // Pequena tolerância para evitar tremulação
+                    enemy.x += (dx > 0 ? 1 : -1) * moveSpeed;
+                    enemy.facingLeft = dx < 0;
+                }
+            }
+        } else {
+            // Voltar ao comportamento de patrulha
+            enemy.isChasing = false;
+            enemy.element.classList.remove('chasing');
+            enemy.element.classList.add('patrol');
+            this.updatePatrolEnemy(enemy);
+        }
+    }
+
+    updateProgress() {
+        // Verificar se existe uma barra de progresso
+        let progressContainer = document.querySelector('.progress-container');
+        
+        // Criar a barra de progresso se não existir
+        if (!progressContainer) {
+            progressContainer = document.createElement('div');
+            progressContainer.className = 'progress-container';
+            
+            const progressBar = document.createElement('div');
+            progressBar.className = 'progress-bar';
+            
+            const progressText = document.createElement('div');
+            progressText.className = 'progress-text';
+            
+            progressContainer.appendChild(progressBar);
+            progressContainer.appendChild(progressText);
+            this.gameContainer.appendChild(progressContainer);
+        }
+        
+        // Atualizar a barra de progresso
+        const progressBar = progressContainer.querySelector('.progress-bar');
+        const progressText = progressContainer.querySelector('.progress-text');
+        
+        if (this.totalEnemies > 0) {
+            const percentage = (this.remainingEnemies / this.totalEnemies) * 100;
+            progressBar.style.width = `${percentage}%`;
+            progressText.textContent = `Inimigos: ${this.remainingEnemies}/${this.totalEnemies}`;
+        } else {
+            progressBar.style.width = '100%';
+            progressText.textContent = 'Sem inimigos';
+        }
     }
 }
 

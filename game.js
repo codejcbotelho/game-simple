@@ -203,13 +203,28 @@ class Game {
     shootProjectile() {
         const projectile = document.createElement('div');
         projectile.className = 'projectile';
-        const direction = this.player.style.transform.includes('scaleX(-1)') ? -1 : 1;
+        
+        let direction = { x: 0, y: 0 };
+        
+        // Determinar direção do tiro
+        if (this.keys.w) {
+            // Tiro para cima
+            direction.y = -1;
+            direction.x = 0;
+        } else {
+            // Tiro horizontal
+            direction.x = this.player.style.transform.includes('scaleX(-1)') ? -1 : 1;
+            direction.y = 0;
+        }
+
+        const speed = 10;
         
         const projectileData = {
             element: projectile,
-            x: this.playerPos.x + (direction > 0 ? 40 : 0),
-            y: this.playerPos.y + 20,
-            velocity: 10 * direction
+            x: this.playerPos.x + 20, // Centro do jogador
+            y: this.playerPos.y + (direction.y < 0 ? 0 : 20), // Topo ou meio do jogador
+            velocityX: direction.x * speed,
+            velocityY: direction.y * speed
         };
 
         projectile.style.cssText = `
@@ -231,30 +246,65 @@ class Game {
     updateProjectiles() {
         for (let i = this.projectiles.length - 1; i >= 0; i--) {
             const projectile = this.projectiles[i];
-            projectile.x += projectile.velocity;
-            projectile.element.style.left = projectile.x + 'px';
+            
+            // Atualizar posição do projétil
+            projectile.x += projectile.velocityX;
+            projectile.y += projectile.velocityY;
+            
+            // Atualizar visual do projétil
+            projectile.element.style.left = `${projectile.x}px`;
+            projectile.element.style.top = `${projectile.y}px`;
 
             // Verificar colisão com inimigos
             const currentMap = this.maps[this.currentMapIndex];
             for (let enemy of currentMap.enemies) {
-                if (enemy.isAlive && this.checkCollision(
-                    projectile.x, projectile.y, 10, 10,
-                    enemy.x, enemy.y, enemy.width, enemy.height
-                )) {
-                    enemy.isAlive = false;
-                    this.score += 50;
-                    const enemyElement = this.gameContainer.querySelector(`.enemy[style*="left: ${enemy.x}px"]`);
-                    if (enemyElement) enemyElement.remove();
-                    
-                    // Remover projétil
-                    projectile.element.remove();
-                    this.projectiles.splice(i, 1);
-                    break;
+                if (enemy.isAlive) {
+                    // Criar uma área de colisão maior para o projétil
+                    const projectileHitbox = {
+                        x: projectile.x - 5,
+                        y: projectile.y - 5,
+                        width: 20,
+                        height: 20
+                    };
+
+                    // Verificar colisão com a hitbox expandida
+                    if (this.checkCollision(
+                        projectileHitbox.x, projectileHitbox.y,
+                        projectileHitbox.width, projectileHitbox.height,
+                        enemy.x, enemy.y, enemy.width, enemy.height
+                    )) {
+                        // Efeito visual de explosão
+                        const explosion = document.createElement('div');
+                        explosion.className = 'explosion';
+                        explosion.style.cssText = `
+                            position: absolute;
+                            left: ${enemy.x}px;
+                            top: ${enemy.y}px;
+                            width: ${enemy.width}px;
+                            height: ${enemy.height}px;
+                        `;
+                        this.gameContainer.appendChild(explosion);
+                        
+                        // Remover explosão após a animação
+                        setTimeout(() => explosion.remove(), 300);
+
+                        // Marcar inimigo como morto e remover
+                        enemy.isAlive = false;
+                        this.score += 50;
+                        const enemyElement = this.gameContainer.querySelector(`.enemy[style*="left: ${Math.round(enemy.x)}px"]`);
+                        if (enemyElement) enemyElement.remove();
+                        
+                        // Remover projétil
+                        projectile.element.remove();
+                        this.projectiles.splice(i, 1);
+                        break;
+                    }
                 }
             }
 
             // Remover projéteis fora da tela
-            if (projectile.x < 0 || projectile.x > 800) {
+            if (projectile.x < 0 || projectile.x > 800 || 
+                projectile.y < 0 || projectile.y > 600) {
                 projectile.element.remove();
                 this.projectiles.splice(i, 1);
             }

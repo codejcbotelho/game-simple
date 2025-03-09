@@ -112,6 +112,15 @@ body {
 .projectile {
     position: absolute;
     animation: glow 0.5s ease-in-out infinite alternate;
+    transform-origin: center;
+}
+
+.explosion {
+    position: absolute;
+    border-radius: 50%;
+    animation: explode 0.3s ease-out forwards;
+    background: radial-gradient(circle, #fff, #ff0);
+    z-index: 15;
 }
 
 @keyframes patrol {
@@ -148,5 +157,20 @@ body {
         box-shadow: 0 0 10px #fff,
                     0 0 20px #fff,
                     0 0 30px #fff;
+    }
+}
+
+@keyframes explode {
+    0% {
+        transform: scale(0.5);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.5);
+        opacity: 0.8;
+    }
+    100% {
+        transform: scale(2);
+        opacity: 0;
     }
 } 

@@ -504,4 +504,24 @@ body {
     font-family: Arial, sans-serif;
     font-size: 14px;
     text-shadow: 1px 1px 1px rgba(0, 0, 0, 0.8);
+}
+
+/* Adicionar ao arquivo styles.css para o efeito de raio */
+@keyframes pulse-lightning {
+    0% {
+        transform: scale(0);
+        opacity: 1;
+    }
+    70% {
+        opacity: 0.7;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 0;
+    }
+}
+
+.lightning-effect {
+    pointer-events: none;
+    box-shadow: 0 0 30px rgba(100, 149, 237, 0.8), inset 0 0 20px rgba(255, 255, 255, 0.8);
 } 

@@ -165,80 +165,84 @@ class Game {
             this.gameContainer.appendChild(platformElement);
         });
 
-        // Criar inimigos
+        // Criar inimigos - apenas os que ainda estão vivos
         if (currentMap.enemies) {
             currentMap.enemies.forEach(enemy => {
-                const enemyElement = document.createElement('div');
-                enemyElement.className = `enemy ${enemy.type}`;
-                enemyElement.style.width = `${enemy.width}px`;
-                enemyElement.style.height = `${enemy.height}px`;
-                enemyElement.style.left = `${enemy.initialX}px`;
-                enemyElement.style.top = `${enemy.initialY}px`;
-                
-                // Adicionar barra de vida
-                const healthBar = document.createElement('div');
-                healthBar.className = 'enemy-health-bar';
-                const healthFill = document.createElement('div');
-                healthFill.className = 'enemy-health-fill';
-                healthBar.appendChild(healthFill);
-                enemyElement.appendChild(healthBar);
-                
-                this.gameContainer.appendChild(enemyElement);
-                
-                // Configurar atributos do inimigo baseado no tipo
-                let health = 100;
-                let damage = 10;
-                let points = 50;
-                
-                switch(enemy.type) {
-                    case 'armored':
-                        health = 200;
-                        damage = 20;
-                        points = 100;
-                        break;
-                    case 'boss':
-                        health = 500;
-                        damage = 30;
-                        points = 500;
-                        break;
+                // Só criar o inimigo se ele estiver vivo
+                if (enemy.isAlive !== false) {
+                    const enemyElement = document.createElement('div');
+                    enemyElement.className = `enemy ${enemy.type}`;
+                    enemyElement.style.width = `${enemy.width}px`;
+                    enemyElement.style.height = `${enemy.height}px`;
+                    enemyElement.style.left = `${enemy.initialX}px`;
+                    enemyElement.style.top = `${enemy.initialY}px`;
+                    
+                    // Adicionar barra de vida
+                    const healthBar = document.createElement('div');
+                    healthBar.className = 'enemy-health-bar';
+                    const healthFill = document.createElement('div');
+                    healthFill.className = 'enemy-health-fill';
+                    healthBar.appendChild(healthFill);
+                    enemyElement.appendChild(healthBar);
+                    
+                    this.gameContainer.appendChild(enemyElement);
+                    
+                    // Configurar atributos do inimigo baseado no tipo
+                    let health = 100;
+                    let damage = 10;
+                    let points = 50;
+                    
+                    switch(enemy.type) {
+                        case 'armored':
+                            health = 200;
+                            damage = 20;
+                            points = 100;
+                            break;
+                        case 'boss':
+                            health = 500;
+                            damage = 30;
+                            points = 500;
+                            break;
+                    }
+                    
+                    // Configurar comportamento de movimento específico para cada tipo
+                    let movementType = 'patrol';
+                    
+                    switch(enemy.type) {
+                        case 'basic':
+                            movementType = 'patrol';
+                            break;
+                        case 'armored':
+                            movementType = 'chase';
+                            break;
+                        case 'boss':
+                            movementType = 'complex';
+                            break;
+                    }
+                    
+                    this.enemies.push({
+                        element: enemyElement,
+                        health: health,
+                        maxHealth: health,
+                        damage: damage,
+                        points: points,
+                        x: enemy.initialX,
+                        y: enemy.initialY,
+                        width: enemy.width,
+                        height: enemy.height,
+                        type: enemy.type,
+                        movementType: movementType,
+                        initialX: enemy.initialX,
+                        speed: enemy.speed || (enemy.type === 'basic' ? 3 : enemy.type === 'armored' ? 2 : 1),
+                        facingLeft: false,
+                        patrolDistance: enemy.patrolDistance || 150,
+                        direction: 1,
+                        isChasing: false,
+                        jumpTimer: 0,
+                        isJumping: false,
+                        enemyId: enemy.initialX + "-" + enemy.initialY // ID único para identificar este inimigo
+                    });
                 }
-                
-                // Configurar comportamento de movimento específico para cada tipo
-                let movementType = 'patrol';
-                
-                switch(enemy.type) {
-                    case 'basic':
-                        movementType = 'patrol';
-                        break;
-                    case 'armored':
-                        movementType = 'chase';
-                        break;
-                    case 'boss':
-                        movementType = 'complex';
-                        break;
-                }
-                
-                this.enemies.push({
-                    element: enemyElement,
-                    health: health,
-                    maxHealth: health,
-                    damage: damage,
-                    points: points,
-                    x: enemy.initialX,
-                    y: enemy.initialY,
-                    width: enemy.width,
-                    height: enemy.height,
-                    type: enemy.type,
-                    movementType: movementType,
-                    initialX: enemy.initialX,
-                    speed: enemy.speed || (enemy.type === 'basic' ? 3 : enemy.type === 'armored' ? 2 : 1),
-                    facingLeft: false,
-                    patrolDistance: enemy.patrolDistance || 150,
-                    direction: 1,
-                    isChasing: false,
-                    jumpTimer: 0,
-                    isJumping: false
-                });
             });
 
             // Atualizar contagem de inimigos e barra de progresso
@@ -350,6 +354,10 @@ class Game {
     }
 
     setupControls() {
+        // Adicionar variáveis para o raio especial
+        this.specialAttackCost = 200; // Pontos necessários para usar o raio
+        this.specialAttackRadius = 150; // Raio de alcance do ataque especial
+        
         // Criar referências para os handlers que possam ser removidos depois
         this.handleKeyDown = (e) => {
             const key = e.key.toLowerCase();
@@ -379,6 +387,11 @@ class Game {
 
             if (key === ' ') {
                 this.shootProjectile();
+            }
+            
+            // NOVA FUNÇÃO: Raio especial com tecla F
+            if (key === 'f') {
+                this.useSpecialAttack();
             }
         };
 
@@ -504,8 +517,8 @@ class Game {
                     this.gameContainer.appendChild(explosion);
                     
                     setTimeout(() => {
-                        if (explosion.parentNode === this.gameContainer) {
-                            this.gameContainer.removeChild(explosion);
+                        if (explosion && explosion.parentNode === this.gameContainer) {
+                            explosion.remove();
                         }
                     }, 300);
                     
@@ -515,13 +528,21 @@ class Game {
                         this.score += enemy.points;
                         this.updateHUD();
                         
+                        // Marcar o inimigo como morto no mapa original para persistência
+                        const currentMap = this.maps[this.currentMapIndex];
+                        currentMap.enemies.forEach(mapEnemy => {
+                            if (mapEnemy.initialX === enemy.initialX && mapEnemy.initialY === enemy.initialY) {
+                                mapEnemy.isAlive = false;
+                            }
+                        });
+                        
                         // Remover inimigo
                         enemy.element.classList.add('explosion');
                         setTimeout(() => {
-                            if (enemy.element.parentNode === this.gameContainer) {
-                                this.gameContainer.removeChild(enemy.element);
+                            if (enemy.element && enemy.element.parentNode === this.gameContainer) {
+                                enemy.element.remove();
                             }
-                        }, 300);
+                        }, 500);
                         
                         // Atualizar contagem de inimigos restantes
                         this.remainingEnemies--;
@@ -839,6 +860,12 @@ class Game {
     }
 
     createGameOverScreen() {
+        // Remover qualquer tela de game over anterior
+        const existingScreen = document.querySelector('.game-over-screen');
+        if (existingScreen) {
+            existingScreen.remove();
+        }
+        
         const gameOverScreen = document.createElement('div');
         gameOverScreen.className = 'game-over-screen';
         
@@ -861,6 +888,7 @@ class Game {
         this.gameContainer.appendChild(gameOverScreen);
         
         restartButton.addEventListener('click', () => {
+            gameOverScreen.remove();
             this.restartGame();
         });
     }
@@ -871,10 +899,39 @@ class Game {
             this.gameContainer.firstChild.remove();
         }
         
+        // Remover a classe paused para permitir animações novamente
+        this.gameContainer.classList.remove('paused');
+        
         // Resetar estado do jogo
         this.isPaused = false;
         this.projectiles = [];
+        this.enemies = [];
         this.lastDamageTime = 0;
+        this.health = 100;
+        this.score = 0;
+        this.totalEnemies = 0;
+        this.remainingEnemies = 0;
+        
+        // Resetar posição do jogador
+        this.playerPos = {
+            x: 50,
+            y: 460
+        };
+        
+        // Resetar velocidade
+        this.velocity = {
+            x: 0,
+            y: 0
+        };
+        
+        // Resetar flags de movimento
+        this.isJumping = false;
+        this.isOnLadder = false;
+        
+        // Resetar teclas pressionadas
+        for (const key in this.keys) {
+            this.keys[key] = false;
+        }
         
         // Remover todos os event listeners antigos
         document.removeEventListener('keydown', this.handleKeyDown);
@@ -885,7 +942,10 @@ class Game {
     }
 
     gameOver() {
-        // Não usar isPaused aqui, apenas parar as animações
+        // Pausar o jogo
+        this.isPaused = true;
+        
+        // Parar todas as animações
         this.gameContainer.classList.add('paused');
         
         // Pausar todas as animações existentes
@@ -894,6 +954,15 @@ class Game {
             element.style.animationPlayState = 'paused';
         });
         
+        // Cancelar qualquer movimento do jogador
+        this.velocity = { x: 0, y: 0 };
+        
+        // Resetar teclas pressionadas para evitar movimento após reiniciar
+        for (const key in this.keys) {
+            this.keys[key] = false;
+        }
+        
+        // Exibir tela de game over
         this.createGameOverScreen();
     }
 
@@ -977,20 +1046,60 @@ class Game {
             } else if (enemy.isJumping) {
                 // Atualizar salto
                 enemy.jumpVelocity += 0.5; // Gravidade
-                enemy.y += enemy.jumpVelocity;
                 
-                // Verificar aterrissagem
-                if (enemy.y >= enemy.initialY) {
-                    enemy.y = enemy.initialY;
-                    enemy.isJumping = false;
-                    enemy.element.classList.remove('jumping');
+                // Limitar velocidade máxima de queda
+                if (enemy.jumpVelocity > 10) {
+                    enemy.jumpVelocity = 10;
+                }
+                
+                // MELHORIA: Verificar colisão com plataformas antes de atualizar posição Y
+                let willCollideWithPlatform = false;
+                
+                // Verificar todas as plataformas para colisão
+                const currentMap = this.maps[this.currentMapIndex];
+                currentMap.platforms.forEach(platform => {
+                    const enemyBottom = enemy.y + enemy.height;
+                    const nextPosition = enemyBottom + enemy.jumpVelocity;
+                    
+                    if (enemy.x < platform.x + platform.width &&
+                        enemy.x + enemy.width > platform.x &&
+                        nextPosition >= platform.y &&
+                        enemy.y < platform.y) {
+                        
+                        // Colisão com plataforma detectada, ajustar posição
+                        enemy.y = platform.y - enemy.height;
+                        enemy.isJumping = false;
+                        enemy.jumpVelocity = 0;
+                        enemy.element.classList.remove('jumping');
+                        willCollideWithPlatform = true;
+                    }
+                });
+                
+                // Se não colidir com nenhuma plataforma, atualizar posição normalmente
+                if (!willCollideWithPlatform) {
+                    enemy.y += enemy.jumpVelocity;
+                    
+                    // Se atingir a posição original, parar de pular
+                    if (enemy.y >= enemy.initialY) {
+                        enemy.y = enemy.initialY;
+                        enemy.isJumping = false;
+                        enemy.jumpVelocity = 0;
+                        enemy.element.classList.remove('jumping');
+                    }
+                    
+                    // Se cair muito, forçar retorno à posição inicial
+                    if (enemy.y > 600) {
+                        enemy.y = enemy.initialY;
+                        enemy.isJumping = false;
+                        enemy.jumpVelocity = 0;
+                        enemy.element.classList.remove('jumping');
+                    }
                 }
             } else {
                 // Movimento horizontal em direção ao jogador
-                const moveSpeed = enemy.speed * 0.7; // Movimento mais lento que o normal
+                const moveSpeed = enemy.speed * 0.7;
                 
-                // Normalizar movimento horizontal
-                if (Math.abs(dx) > 10) { // Pequena tolerância para evitar tremulação
+                if (Math.abs(dx) > 10) {
                     enemy.x += (dx > 0 ? 1 : -1) * moveSpeed;
                     enemy.facingLeft = dx < 0;
                 }
@@ -1036,6 +1145,131 @@ class Game {
             progressBar.style.width = '100%';
             progressText.textContent = 'Sem inimigos';
         }
+    }
+
+    // Adicionar o método para o ataque especial
+    useSpecialAttack() {
+        // Verificar se o jogador tem pontos suficientes
+        if (this.score >= this.specialAttackCost) {
+            // Gastar pontos
+            this.score -= this.specialAttackCost;
+            this.updateHUD();
+            
+            // Criar efeito visual
+            this.createLightningEffect();
+            
+            // Causar dano aos inimigos próximos
+            this.damageNearbyEnemies();
+        } else {
+            // Exibir mensagem de que não tem pontos suficientes
+            this.showMessage("Precisa de " + this.specialAttackCost + " pontos para usar o raio!");
+        }
+    }
+
+    createLightningEffect() {
+        // Criar container do efeito
+        const lightning = document.createElement('div');
+        lightning.className = 'lightning-effect';
+        lightning.style.cssText = `
+            position: absolute;
+            left: ${this.playerPos.x - this.specialAttackRadius + 20}px;
+            top: ${this.playerPos.y - this.specialAttackRadius + 20}px;
+            width: ${this.specialAttackRadius * 2}px;
+            height: ${this.specialAttackRadius * 2}px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255,255,255,0.8) 0%, rgba(100,149,237,0.5) 30%, rgba(0,0,255,0) 70%);
+            z-index: 30;
+            animation: pulse-lightning 0.5s forwards;
+        `;
+        
+        this.gameContainer.appendChild(lightning);
+        
+        // Remover após a animação
+        setTimeout(() => {
+            lightning.remove();
+        }, 500);
+    }
+
+    damageNearbyEnemies() {
+        // Verificar cada inimigo para ver se está dentro do alcance
+        this.enemies.forEach(enemy => {
+            if (enemy.health > 0) {
+                // Calcular distância do jogador ao inimigo
+                const dx = enemy.x + (enemy.width / 2) - (this.playerPos.x + 20);
+                const dy = enemy.y + (enemy.height / 2) - (this.playerPos.y + 20);
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                
+                // Se estiver dentro do alcance, causar dano
+                if (distance <= this.specialAttackRadius) {
+                    // Causar dano fixo (elimina inimigos básicos instantaneamente)
+                    const damageAmount = 150;
+                    
+                    // Subtrair vida do inimigo
+                    enemy.health -= damageAmount;
+                    
+                    // Atualizar barra de vida
+                    const healthPercentage = (enemy.health / enemy.maxHealth) * 100;
+                    const healthFill = enemy.element.querySelector('.enemy-health-fill');
+                    if (healthFill) {
+                        healthFill.style.width = `${Math.max(0, healthPercentage)}%`;
+                    }
+                    
+                    // Mostrar número de dano
+                    this.showDamageNumber(damageAmount, enemy.x + enemy.width / 2, enemy.y);
+                    
+                    // Verificar se o inimigo foi derrotado
+                    if (enemy.health <= 0) {
+                        // Marcar o inimigo como morto no mapa original para persistência
+                        const currentMap = this.maps[this.currentMapIndex];
+                        currentMap.enemies.forEach(mapEnemy => {
+                            if (mapEnemy.initialX === enemy.initialX && mapEnemy.initialY === enemy.initialY) {
+                                mapEnemy.isAlive = false;
+                            }
+                        });
+                        
+                        // Remover inimigo
+                        enemy.element.classList.add('explosion');
+                        setTimeout(() => {
+                            if (enemy.element && enemy.element.parentNode === this.gameContainer) {
+                                enemy.element.remove();
+                            }
+                        }, 500);
+                        
+                        // Atualizar contagem de inimigos
+                        this.remainingEnemies--;
+                        this.updateProgress();
+                        
+                        // Não damos pontos extras aqui pois já gastamos pontos para o ataque
+                    }
+                }
+            }
+        });
+    }
+
+    showMessage(text) {
+        const message = document.createElement('div');
+        message.className = 'game-message';
+        message.textContent = text;
+        message.style.cssText = `
+            position: absolute;
+            left: 50%;
+            top: 150px;
+            transform: translateX(-50%);
+            background-color: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-family: Arial, sans-serif;
+            font-size: 16px;
+            z-index: 100;
+        `;
+        
+        this.gameContainer.appendChild(message);
+        
+        // Remover após alguns segundos
+        setTimeout(() => {
+            message.remove();
+        }, 2000);
     }
 }
 

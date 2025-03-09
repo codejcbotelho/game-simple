@@ -2,8 +2,92 @@
     "maps": [
         {
             "id": 0,
-            "name": "Início",
-            "description": "Mapa inicial com escada para o andar superior",
+            "name": "Fase 1 - Iniciação",
+            "description": "Primeira fase com diferentes tipos de inimigos",
+            "backgroundColor": "#000",
+            "platforms": [
+                { 
+                    "x": 0, 
+                    "y": 560, 
+                    "width": 800, 
+                    "height": 40, 
+                    "color": "#4a4a4a", 
+                    "type": "ground" 
+                },
+                {
+                    "x": 200,
+                    "y": 400,
+                    "width": 200,
+                    "height": 20,
+                    "color": "#666",
+                    "type": "platform"
+                },
+                {
+                    "x": 500,
+                    "y": 300,
+                    "width": 200,
+                    "height": 20,
+                    "color": "#666",
+                    "type": "platform"
+                }
+            ],
+            "enemies": [
+                {
+                    "type": "basic",
+                    "initialX": 300,
+                    "initialY": 360,
+                    "width": 30,
+                    "height": 30,
+                    "speed": 3,
+                    "patrolDistance": 100
+                },
+                {
+                    "type": "armored",
+                    "initialX": 600,
+                    "initialY": 260,
+                    "width": 40,
+                    "height": 40,
+                    "speed": 2,
+                    "patrolDistance": 150
+                },
+                {
+                    "type": "basic",
+                    "initialX": 150,
+                    "initialY": 520,
+                    "width": 30,
+                    "height": 30,
+                    "speed": 3,
+                    "patrolDistance": 100
+                },
+                {
+                    "type": "armored",
+                    "initialX": 450,
+                    "initialY": 520,
+                    "width": 40,
+                    "height": 40,
+                    "speed": 2,
+                    "patrolDistance": 150
+                },
+                {
+                    "type": "boss",
+                    "initialX": 700,
+                    "initialY": 510,
+                    "width": 50,
+                    "height": 50,
+                    "speed": 1,
+                    "patrolDistance": 200
+                }
+            ],
+            "items": [],
+            "connections": {
+                "right": 1
+            }
+        },
+        {
+            "id": 1,
+            "name": "Fase 2 - Torre de Desafios",
+            "description": "Fase vertical com plataformas e escadas",
+            "backgroundColor": "#000",
             "platforms": [
                 {
                     "x": 0,
@@ -14,101 +98,78 @@
                     "type": "ground"
                 },
                 {
-                    "x": 200,
+                    "x": 100,
                     "y": 400,
-                    "width": 100,
+                    "width": 200,
                     "height": 20,
                     "color": "#666",
                     "type": "platform"
                 },
                 {
-                    "x": 600,
-                    "y": 200,
+                    "x": 500,
+                    "y": 400,
+                    "width": 200,
+                    "height": 20,
+                    "color": "#666",
+                    "type": "platform"
+                },
+                {
+                    "x": 300,
+                    "y": 250,
+                    "width": 200,
+                    "height": 20,
+                    "color": "#666",
+                    "type": "platform"
+                },
+                {
+                    "x": 700,
+                    "y": 150,
                     "width": 40,
-                    "height": 400,
+                    "height": 450,
                     "color": "#666",
                     "type": "ladder"
                 }
             ],
             "enemies": [
                 {
-                    "initialX": 300,
-                    "initialY": 520,
-                    "width": 30,
-                    "height": 30,
-                    "color": "#ff6b6b",
+                    "type": "armored",
+                    "initialX": 150,
+                    "initialY": 360,
+                    "width": 40,
+                    "height": 40,
                     "speed": 2,
-                    "type": "patrol",
-                    "patrolDistance": 100
-                }
-            ],
-            "items": [
-                {
-                    "x": 220,
-                    "y": 370,
-                    "type": "coin",
-                    "value": 10
-                }
-            ],
-            "connections": {
-                "top": 1,
-                "right": 3
-            },
-            "backgroundColor": "#000"
-        },
-        {
-            "id": 1,
-            "name": "Andar Superior",
-            "description": "Mapa superior com buraco no meio",
-            "platforms": [
-                {
-                    "x": 0,
-                    "y": 560,
-                    "width": 300,
-                    "height": 40,
-                    "color": "#4a4a4a",
-                    "type": "ground"
+                    "patrolDistance": 150
                 },
                 {
-                    "x": 500,
-                    "y": 560,
-                    "width": 300,
-                    "height": 40,
-                    "color": "#4a4a4a",
-                    "type": "ground"
+                    "type": "boss",
+                    "initialX": 550,
+                    "initialY": 360,
+                    "width": 50,
+                    "height": 50,
+                    "speed": 1,
+                    "patrolDistance": 150
                 },
                 {
-                    "x": 350,
-                    "y": 300,
-                    "width": 100,
-                    "height": 20,
-                    "color": "#666",
-                    "type": "platform"
-                }
-            ],
-            "enemies": [
-                {
-                    "initialX": 600,
-                    "initialY": 520,
+                    "type": "basic",
+                    "initialX": 350,
+                    "initialY": 210,
                     "width": 30,
                     "height": 30,
-                    "color": "#ff6b6b",
-                    "speed": 2.5,
-                    "type": "patrol",
-                    "patrolDistance": 150
+                    "speed": 3,
+                    "patrolDistance": 100
                 }
             ],
             "items": [],
             "connections": {
-                "bottom": 0,
+                "left": 0,
                 "right": 2
-            },
-            "backgroundColor": "#000"
+            }
         },
         {
             "id": 2,
-            "name": "Torre Superior",
-            "description": "Mapa superior direito com plataformas em níveis",
+            "name": "Fase 3 - Caverna dos Chefes",
+            "description": "Fase com múltiplos chefes e plataformas complexas",
+            "backgroundColor": "#000",
             "platforms": [
                 {
                     "x": 0,
@@ -121,7 +182,15 @@
                 {
                     "x": 100,
                     "y": 450,
-                    "width": 100,
+                    "width": 150,
+                    "height": 20,
+                    "color": "#666",
+                    "type": "platform"
+                },
+                {
+                    "x": 550,
+                    "y": 450,
+                    "width": 150,
                     "height": 20,
                     "color": "#666",
                     "type": "platform"
@@ -129,30 +198,52 @@
                 {
                     "x": 300,
                     "y": 350,
-                    "width": 100,
+                    "width": 200,
                     "height": 20,
                     "color": "#666",
                     "type": "platform"
                 }
             ],
-            "enemies": [],
-            "items": [
+            "enemies": [
                 {
-                    "x": 320,
-                    "y": 320,
-                    "type": "powerup",
-                    "effect": "jump_boost"
+                    "type": "boss",
+                    "initialX": 150,
+                    "initialY": 410,
+                    "width": 50,
+                    "height": 50,
+                    "speed": 1,
+                    "patrolDistance": 100
+                },
+                {
+                    "type": "boss",
+                    "initialX": 600,
+                    "initialY": 410,
+                    "width": 50,
+                    "height": 50,
+                    "speed": 1,
+                    "patrolDistance": 100
+                },
+                {
+                    "type": "armored",
+                    "initialX": 350,
+                    "initialY": 310,
+                    "width": 40,
+                    "height": 40,
+                    "speed": 2,
+                    "patrolDistance": 150
                 }
             ],
+            "items": [],
             "connections": {
-                "left": 1
-            },
-            "backgroundColor": "#000"
+                "left": 1,
+                "right": 3
+            }
         },
         {
             "id": 3,
-            "name": "Torre Direita",
-            "description": "Mapa lateral com escada para subir",
+            "name": "Fase 4 - Arena Final",
+            "description": "Fase final com todos os tipos de inimigos",
+            "backgroundColor": "#000",
             "platforms": [
                 {
                     "x": 0,
@@ -163,17 +254,41 @@
                     "type": "ground"
                 },
                 {
-                    "x": 0,
-                    "y": 200,
-                    "width": 40,
-                    "height": 400,
+                    "x": 50,
+                    "y": 450,
+                    "width": 100,
+                    "height": 20,
                     "color": "#666",
-                    "type": "ladder"
+                    "type": "platform"
+                },
+                {
+                    "x": 650,
+                    "y": 450,
+                    "width": 100,
+                    "height": 20,
+                    "color": "#666",
+                    "type": "platform"
+                },
+                {
+                    "x": 350,
+                    "y": 350,
+                    "width": 100,
+                    "height": 20,
+                    "color": "#666",
+                    "type": "platform"
                 },
                 {
                     "x": 200,
-                    "y": 300,
-                    "width": 400,
+                    "y": 250,
+                    "width": 100,
+                    "height": 20,
+                    "color": "#666",
+                    "type": "platform"
+                },
+                {
+                    "x": 500,
+                    "y": 250,
+                    "width": 100,
                     "height": 20,
                     "color": "#666",
                     "type": "platform"
@@ -181,22 +296,55 @@
             ],
             "enemies": [
                 {
+                    "type": "boss",
                     "initialX": 400,
-                    "initialY": 260,
+                    "initialY": 510,
+                    "width": 50,
+                    "height": 50,
+                    "speed": 1,
+                    "patrolDistance": 300
+                },
+                {
+                    "type": "armored",
+                    "initialX": 100,
+                    "initialY": 410,
+                    "width": 40,
+                    "height": 40,
+                    "speed": 2,
+                    "patrolDistance": 100
+                },
+                {
+                    "type": "armored",
+                    "initialX": 700,
+                    "initialY": 410,
+                    "width": 40,
+                    "height": 40,
+                    "speed": 2,
+                    "patrolDistance": 100
+                },
+                {
+                    "type": "basic",
+                    "initialX": 250,
+                    "initialY": 210,
                     "width": 30,
                     "height": 30,
-                    "color": "#ff6b6b",
                     "speed": 3,
-                    "type": "patrol",
-                    "patrolDistance": 200
+                    "patrolDistance": 100
+                },
+                {
+                    "type": "basic",
+                    "initialX": 550,
+                    "initialY": 210,
+                    "width": 30,
+                    "height": 30,
+                    "speed": 3,
+                    "patrolDistance": 100
                 }
             ],
             "items": [],
             "connections": {
-                "left": 0,
-                "top": 2
-            },
-            "backgroundColor": "#000"
+                "left": 2
+            }
         }
     ]
 } 

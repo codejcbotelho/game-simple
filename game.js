@@ -30,6 +30,33 @@ class Map {
 
 class Game {
     constructor() {
+        this.createStartScreen();
+    }
+
+    createStartScreen() {
+        this.startScreen = document.createElement('div');
+        this.startScreen.className = 'start-screen';
+        
+        const startButton = document.createElement('button');
+        startButton.className = 'start-button';
+        startButton.textContent = 'Começar Jogo';
+        
+        const credits = document.createElement('div');
+        credits.className = 'credits';
+        credits.textContent = 'Feito por JC Botelho com IA';
+        
+        this.startScreen.appendChild(startButton);
+        this.startScreen.appendChild(credits);
+        
+        document.querySelector('.game-container').appendChild(this.startScreen);
+        
+        startButton.addEventListener('click', () => {
+            this.startScreen.remove();
+            this.initializeGame();
+        });
+    }
+
+    initializeGame() {
         this.player = document.getElementById('player');
         this.gameContainer = document.querySelector('.game-container');
         
@@ -54,7 +81,7 @@ class Game {
             this.health = 100;
             this.projectiles = [];
             this.lastDamageTime = 0;
-            this.damageInvincibilityTime = 1000; // 1 segundo de invencibilidade após dano
+            this.damageInvincibilityTime = 1000;
 
             this.keys = {
                 w: false,
@@ -64,7 +91,6 @@ class Game {
                 ' ': false
             };
 
-            // Criar HUD
             this.createHUD();
             this.setupMap(this.currentMapIndex);
             this.updatePlayerPosition();

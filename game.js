@@ -30,6 +30,7 @@ class Map {
 
 class Game {
     constructor() {
+        this.isPaused = false;
         this.createStartScreen();
     }
 
@@ -199,9 +200,88 @@ class Game {
         document.getElementById('score').textContent = this.score;
     }
 
+    createPauseScreen() {
+        this.pauseScreen = document.createElement('div');
+        this.pauseScreen.className = 'pause-screen';
+        
+        const pauseTitle = document.createElement('div');
+        pauseTitle.className = 'pause-title';
+        pauseTitle.textContent = 'Jogo Pausado';
+        
+        const continueButton = document.createElement('button');
+        continueButton.className = 'pause-button';
+        continueButton.textContent = 'Continuar';
+        
+        const quitButton = document.createElement('button');
+        quitButton.className = 'pause-button';
+        quitButton.textContent = 'Sair do Jogo';
+        
+        this.pauseScreen.appendChild(pauseTitle);
+        this.pauseScreen.appendChild(continueButton);
+        this.pauseScreen.appendChild(quitButton);
+        
+        continueButton.addEventListener('click', () => this.unpauseGame());
+        quitButton.addEventListener('click', () => this.quitGame());
+        
+        this.gameContainer.appendChild(this.pauseScreen);
+    }
+
+    pauseGame() {
+        if (!this.isPaused) {
+            this.isPaused = true;
+            this.gameContainer.classList.add('paused');
+            
+            // Pausar todas as animações existentes
+            const animatedElements = this.gameContainer.querySelectorAll('.enemy, .item, .projectile, .explosion');
+            animatedElements.forEach(element => {
+                element.style.animationPlayState = 'paused';
+            });
+            
+            this.createPauseScreen();
+        }
+    }
+
+    unpauseGame() {
+        if (this.isPaused) {
+            this.isPaused = false;
+            this.gameContainer.classList.remove('paused');
+            
+            // Retomar todas as animações
+            const animatedElements = this.gameContainer.querySelectorAll('.enemy, .item, .projectile, .explosion');
+            animatedElements.forEach(element => {
+                element.style.animationPlayState = 'running';
+            });
+            
+            this.pauseScreen.remove();
+        }
+    }
+
+    quitGame() {
+        // Limpar o container do jogo
+        while (this.gameContainer.firstChild) {
+            this.gameContainer.firstChild.remove();
+        }
+        
+        // Reiniciar o jogo voltando para a tela inicial
+        this.createStartScreen();
+    }
+
     setupControls() {
         document.addEventListener('keydown', (e) => {
             const key = e.key.toLowerCase();
+            
+            // Verificar tecla ESC para pausar
+            if (key === 'escape') {
+                if (this.isPaused) {
+                    this.unpauseGame();
+                } else {
+                    this.pauseGame();
+                }
+                return;
+            }
+            
+            // Não processar outros controles se o jogo estiver pausado
+            if (this.isPaused) return;
             
             if (this.keys.hasOwnProperty(key)) {
                 this.keys[key] = true;
@@ -537,7 +617,9 @@ class Game {
     }
 
     gameLoop() {
-        this.update();
+        if (!this.isPaused) {
+            this.update();
+        }
         requestAnimationFrame(() => this.gameLoop());
     }
 }

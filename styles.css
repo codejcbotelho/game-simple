@@ -217,4 +217,58 @@ body {
     text-align: center;
     margin-top: 20px;
     text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.pause-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(5px);
+}
+
+.pause-title {
+    color: white;
+    font-family: Arial, sans-serif;
+    font-size: 36px;
+    margin-bottom: 30px;
+    text-transform: uppercase;
+    letter-spacing: 3px;
+    text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.pause-button {
+    padding: 12px 25px;
+    font-size: 20px;
+    background-color: #ff0000;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin: 10px 0;
+    width: 200px;
+    transition: transform 0.2s, background-color 0.2s;
+    font-family: Arial, sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    box-shadow: 0 0 15px rgba(255, 0, 0, 0.3);
+}
+
+.pause-button:hover {
+    transform: scale(1.05);
+    background-color: #ff3333;
+}
+
+.game-container.paused .enemy,
+.game-container.paused .item,
+.game-container.paused .projectile,
+.game-container.paused .explosion {
+    animation-play-state: paused !important;
 } 
